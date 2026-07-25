@@ -610,7 +610,15 @@ class Computer1Session:
             "--ignore-certificate-errors",
             "--disable-dev-shm-usage",
             "--no-sandbox",
-            "--disable-gpu",
+            # Software-rasterise GL instead of disabling it. The desktop has no
+            # GPU, but `--disable-gpu` also drops WebGL entirely, and WebGL2-only
+            # sites (e.g. IKEA's Room Planner: "Betrakta Material Shaders ...
+            # require WebGL2, which isn't supported on this device") then refuse
+            # to render at all. SwiftShader via ANGLE reports webgl2=true on the
+            # GPU-less Xvfb desktop, so those sites load and stay driveable.
+            "--use-gl=angle",
+            "--use-angle=swiftshader",
+            "--enable-unsafe-swiftshader",
             f"--display={_DEFAULT_DISPLAY}",
             f"--user-data-dir={_CHROME_PROFILE}",
             f"--window-position={self.geometry.window_x},{self.geometry.window_y}",

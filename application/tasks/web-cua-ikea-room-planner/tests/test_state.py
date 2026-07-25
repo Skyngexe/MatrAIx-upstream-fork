@@ -32,6 +32,36 @@ BUDGET_FIT = {"within_budget", "over_budget", "under_budget"}
 LIFESTYLE_FIT = {"strong", "partial", "weak"}
 MODIFICATION_TRIGGERS = {"budget", "space", "family_need", "style", "other"}
 
+# Substrings that mark a "the tool never loaded" placeholder rather than a real
+# product read off the live planner. Every schema field below can be satisfied by
+# non-empty error text, so an agent blocked by WebGL2/bot protection could
+# otherwise score a full reward while reporting no actual furniture. Product
+# names, the running total, and the series list must describe real IKEA items.
+_PLACEHOLDER_MARKERS = (
+    "unable to",
+    "not accessible",
+    "inaccessible",
+    "did not load",
+    "failed to load",
+    "not supported",
+    "error",
+    "n/a",
+    "unknown",
+    "none found",
+    "placeholder",
+    "tbd",
+)
+
+
+def _assert_not_placeholder(value: str, label: str) -> None:
+    lowered = value.strip().lower()
+    for marker in _PLACEHOLDER_MARKERS:
+        assert marker not in lowered, (
+            f"{label} looks like a tool-failure placeholder rather than a real "
+            f"value read from the planner ({value!r} contains {marker!r}). "
+            "Read real IKEA product names, prices, and series from the live tool."
+        )
+
 
 def _load() -> dict:
     assert OUTPUT.is_file(), f"Missing {OUTPUT}"
@@ -115,6 +145,7 @@ def test_room_plan():
     assert isinstance(size, str) and size.strip(), (
         "approx_room_size_text must be a non-empty string"
     )
+    _assert_not_placeholder(size, "approx_room_size_text")
 
     products = plan.get("products")
     assert isinstance(products, list) and len(products) >= 3, (
@@ -124,6 +155,7 @@ def test_room_plan():
         assert isinstance(item, dict), "each product must be an object"
         name = item.get("name")
         assert isinstance(name, str) and name.strip(), "product name must be non-empty"
+        _assert_not_placeholder(name, "product name")
         assert item.get("category") in PRODUCT_CATEGORIES, (
             f"product category must be one of {sorted(PRODUCT_CATEGORIES)}"
         )
@@ -131,17 +163,28 @@ def test_room_plan():
         assert isinstance(price, str) and price.strip(), (
             "product price_text must be non-empty"
         )
+        _assert_not_placeholder(price, "product price_text")
+        # A real listed price carries a digit; "$0.00" means nothing was read.
+        assert any(ch.isdigit() for ch in price), (
+            f"product price_text must contain the listed price ({price!r})"
+        )
+        assert any(ch in "123456789" for ch in price), (
+            f"product price_text must be a real non-zero price ({price!r})"
+        )
 
     total = plan.get("estimated_total_text")
     assert isinstance(total, str) and total.strip(), (
         "estimated_total_text must be a non-empty string"
     )
+    _assert_not_placeholder(total, "estimated_total_text")
 
     series = plan.get("series_used")
     assert isinstance(series, list) and series, (
         "series_used must name at least one IKEA series/collection"
     )
     _non_empty_str_list(series, "series_used")
+    for name in series:
+        _assert_not_placeholder(name, "series_used entry")
 
 
 def test_modifications():
