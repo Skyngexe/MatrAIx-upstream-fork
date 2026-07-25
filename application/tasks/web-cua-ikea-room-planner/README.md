@@ -82,10 +82,21 @@ uv run harbor run -p application/tasks/web-cua-ikea-room-planner -a oracle
 - Known limitation: driving IKEA's 3D canvas by screenshot is demanding and
   slow (~20+ min, many steps). The oracle path emits a schema-valid reference
   submission for a completed job + batch report without a live desktop.
-- Known limitation (**WebGL2**): the Computer1 runtime starts Chromium with
-  `--disable-gpu` on a GPU-less Xvfb desktop, so IKEA's shaders report
-  "require WebGL2, which isn't supported on this device". The persona still
-  clears bot protection and can browse the live catalog for real product names
-  and prices — which is what the verifier scores — but in-canvas 3D layout needs
-  a GPU-backed desktop. Expect catalog-driven furnishing, not 3D manipulation,
-  from live CUA runs.
+- **This task needs `enable_webgl: true`.** IKEA's planner is WebGL2-only
+  ("Betrakta Material Shaders are enabled and require WebGL2, which isn't
+  supported on this device"). The Computer1 desktop has no GPU and starts
+  Chromium with `--disable-gpu` by default, which drops WebGL entirely — so the
+  planner loads but never becomes usable, and the agent gives up on the tool.
+  Passing `enable_webgl: true` in the agent `kwargs` (see the Bedrock recipe)
+  swaps that for ANGLE + SwiftShader software rasterisation, which reports
+  `webgl2=true` on the same GPU-less desktop. It is **opt-in per task**: the
+  default is unchanged, so no other CUA task is affected. Verified headed under
+  Xvfb in `shared-web-cua-linux`:
+
+  | Chromium GL flags | WebGL2 |
+  |---|---|
+  | `--disable-gpu` (default) | `false` — renderer `none` |
+  | `--use-gl=angle --use-angle=swiftshader` | `true` — ANGLE/SwiftShader (Vulkan 1.3) |
+
+  Software rasterisation is slower than no GL at all, which is why it stays
+  opt-in rather than becoming the default.

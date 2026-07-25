@@ -22,6 +22,11 @@ agents:
     model_name: bedrock/us.anthropic.claude-sonnet-4-5-20250929-v1:0
     kwargs:
       persona_path: persona/datasets/bench-dev-sample/persona_0042.yaml
+      # IKEA's Room Planner is WebGL2-only ("Betrakta Material Shaders ...
+      # require WebGL2, which isn't supported on this device"). The desktop has
+      # no GPU, and the default --disable-gpu drops WebGL entirely, so opt into
+      # ANGLE + SwiftShader software rasterisation for this task.
+      enable_webgl: true
 
 tasks:
   - path: application/tasks/web-cua-ikea-room-planner
