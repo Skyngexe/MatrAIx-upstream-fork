@@ -2,7 +2,13 @@
 
 Use IKEA's **Room Planner / Home Design** tool at:
 
-https://www.ikea.com/us/en/home-design/room/?roomType=generic
+https://www.ikea.com/us/en/home-design/room/?roomType=generic#1d9a5bb8-08b5-43aa-ab0c-ff91d92c95f9/0943b0b9-198c-4e74-b287-171db3f4ad35
+
+Open that URL **exactly as written**, including everything after the `#`. That
+fragment is the planner scene to open; without it the tool sits on "Preparing
+your room ..." and never becomes usable. The planner may show a "Quick tips to
+get started" overlay and a cookie banner on first load — dismiss them ("Skip
+tips", "Ok") before you start designing.
 
 Design a room as **yourself** — someone with your own home situation, budget,
 household, and taste. Tell the planner about your room, build a layout out of

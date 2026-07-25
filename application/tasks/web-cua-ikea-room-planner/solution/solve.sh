@@ -21,8 +21,11 @@ try:
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page()
         # Best-effort reachability check; failures are non-fatal for the oracle.
+        # The `#<design-id>/<scene-id>` fragment is required; the bare
+        # ?roomType=generic URL hangs on "Preparing your room ..." forever.
         page.goto(
-            "https://www.ikea.com/us/en/home-design/room/?roomType=generic",
+            "https://www.ikea.com/us/en/home-design/room/?roomType=generic"
+            "#1d9a5bb8-08b5-43aa-ab0c-ff91d92c95f9/0943b0b9-198c-4e74-b287-171db3f4ad35",
             wait_until="domcontentloaded",
             timeout=60_000,
         )
