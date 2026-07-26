@@ -30,6 +30,8 @@ browsing — the trade-off is that CUA runs are slower and costlier
 | Environment | `docker` (Linux Xvfb, `network_mode = "public"`) |
 | Persona | `persona/datasets/bench-dev-sample/persona_0042.yaml` |
 | API key | `ANTHROPIC_API_KEY` (or Bedrock: `AWS_BEARER_TOKEN_BEDROCK` + `AWS_REGION`) |
+| `enable_webgl` | `true` — **required**, see [Notes](#notes) |
+| `max_turns` | `85` — **required on Bedrock**, see [Notes](#notes) |
 
 Anthropic API:
 
@@ -99,4 +101,36 @@ uv run harbor run -p application/tasks/web-cua-ikea-room-planner -a oracle
   | `--use-gl=angle --use-angle=swiftshader` | `true` — ANGLE/SwiftShader (Vulkan 1.3) |
 
   Software rasterisation is slower than no GL at all, which is why it stays
-  opt-in rather than becoming the default.
+  opt-in rather than becoming the default. It is also CPU-heavy: the container
+  sat at ~206% CPU of its 2-core limit for a whole run (memory was fine, ~708
+  MiB of 4 GiB), so raising `cpus` in `task.toml` is worth considering if runs
+  feel slow.
+- **`max_turns: 85` is required on Bedrock — this task will fail without it.**
+  Bedrock refuses any request carrying more than 100 images:
+
+  ```
+  Error code: 400 - {'message': 'Too much media: 0 document pages + 101 images > 100'}
+  ```
+
+  Each CUA step adds one screenshot, so a long run walks straight into that
+  ceiling. The runtime *can* trim screenshot history
+  (`Computer1Compactor._trim_old_screenshots`, keeps the last 3), but only during
+  **token**-triggered compaction — and tokens are not the binding constraint
+  here. Observed across two live runs:
+
+  | Run | Steps | Screenshots | Peak prompt tokens | Compactions | Outcome |
+  |---|---|---|---|---|---|
+  | verified good | 86 | 84 | 128,528 | 0 | reward 1.0 |
+  | uncapped | 99 | 98 | 146,530 | 0 | Bedrock 400 at image 101 |
+
+  Peak tokens stayed ~53k below Sonnet's 200k window, so compaction never fired
+  and nothing pruned images. Note the good run cleared the cap by only 16
+  screenshots — it was *under* the ceiling, not safely under it. The uncapped run
+  spent all 99 steps exploring and never wrote `room_plan.json` at all, so the
+  cap is paired with an explicit "have a plan saved by ~turn 70" budget in
+  `instruction.md`; a cap alone would just stop a run that had not submitted yet.
+
+  This is a shared-runtime gap (any long CUA run on Bedrock can hit it), not
+  something specific to IKEA — the per-task cap is the contained workaround. A
+  general fix would be an image-count trigger for compaction alongside the token
+  one, which is deliberately **not** part of this PR.

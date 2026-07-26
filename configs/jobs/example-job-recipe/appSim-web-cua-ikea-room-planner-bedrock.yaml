@@ -27,6 +27,16 @@ agents:
       # no GPU, and the default --disable-gpu drops WebGL entirely, so opt into
       # ANGLE + SwiftShader software rasterisation for this task.
       enable_webgl: true
+      # Cap the screenshot loop. Bedrock rejects any request carrying >100
+      # images ("Too much media: 0 document pages + 101 images > 100"), and the
+      # runtime only trims screenshot history during *token*-triggered
+      # compaction — which never fires here (peak ~147k of a 200k window), so
+      # images accumulate until the request is refused. A verified good run
+      # finished in 86 steps / 84 screenshots; an 85-turn cap keeps every run
+      # clear of the image ceiling with headroom to spare. Paired with the
+      # "submit by turn ~70" budget in instruction.md so the persona writes
+      # room_plan.json before the cap rather than exploring until it stops.
+      max_turns: 85
 
 tasks:
   - path: application/tasks/web-cua-ikea-room-planner

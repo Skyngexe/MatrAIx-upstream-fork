@@ -53,6 +53,13 @@ No login, payment, or account is required. Read product names and prices from
 the live tool — do not invent values. Pages and inventory change, so record
 what you actually see.
 
+**Budget your session.** The planner is slow and this run is capped, so do not
+spend the whole session exploring. Aim to have a usable plan by roughly turn 70:
+once you have three or more real products with their prices, write
+`/app/output/room_plan.json` — then keep refining and rewrite the file if you
+improve the plan. A saved plan you later improve beats a perfect plan you never
+got to save.
+
 ## Submission
 
 Write your room details, the plan you built, the modifications you made, and
