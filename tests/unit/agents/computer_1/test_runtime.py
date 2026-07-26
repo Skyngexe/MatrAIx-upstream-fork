@@ -163,9 +163,7 @@ def test_gl_args_default_disables_gpu(tmp_path):
 
 def test_gl_args_opt_in_enables_software_webgl(tmp_path):
     env = AsyncMock()
-    session = Computer1Session(
-        environment=env, agent_dir=tmp_path, enable_webgl=True
-    )
+    session = Computer1Session(environment=env, agent_dir=tmp_path, enable_webgl=True)
     args = session._gl_args()
     assert "--disable-gpu" not in args
     assert "--use-angle=swiftshader" in args
@@ -202,9 +200,7 @@ async def test_start_chromium_default_passes_disable_gpu(tmp_path):
 async def test_start_chromium_webgl_swaps_in_swiftshader(tmp_path):
     env = AsyncMock()
     env.exec.return_value = _ok()
-    session = Computer1Session(
-        environment=env, agent_dir=tmp_path, enable_webgl=True
-    )
+    session = Computer1Session(environment=env, agent_dir=tmp_path, enable_webgl=True)
     await session._start_chromium()
     cmd = env.exec.await_args_list[-1].kwargs["command"]
     assert "--disable-gpu" not in cmd
